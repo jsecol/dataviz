@@ -1,0 +1,161 @@
+---
+title: "Explore violations by year for EPA Region 01"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+
+```{r setup, include=FALSE}
+
+library(flexdashboard)
+library(readr)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(sf)
+library(DT)
+library(maps)
+
+```
+
+
+
+```{r global, include=FALSE}
+
+violations <- read_csv("violation_2019-10-06_08-03-23.zip", 
+                       col_types = cols(.default = "c"))
+
+violations <- violations %>% 
+  rename_all(~ sub("VIOLATION.", "", names(violations))) %>% 
+  mutate(COMPL_PER_BEGIN_DATE = dmy(COMPL_PER_BEGIN_DATE)) %>% 
+  mutate(YEAR = year(COMPL_PER_BEGIN_DATE)) %>% 
+  filter(PRIMACY_AGENCY_CODE != "01")
+
+locations <- st_read("epa01_watersystems.geojson", 
+                     stringsAsFactors = FALSE)
+
+states <- map_data("state") %>% 
+  filter(region %in% c("connecticut", "maine", "massachusetts", 
+                       "new hampshire", "rhode island", "vermont"))
+
+```
+
+
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+
+```{r violations, echo=FALSE}
+inputPanel(
+  selectInput("code", label = "Contaminant code:",
+              choices = c("1005", "3100", "3013", "3014", "5000"), selected = "1005"),
+  selectInput("type", label = "Health-based:",
+              choices = c("Y", "N"), selected = "Y"),
+  selectInput("year", label = "Map and table year:",
+              choices = c(2002:2019), selected = 2010)
+  
+)
+```
+
+</br>
+
++ Data from SDWIS Violation table download 2019-10-06
++ Just a few contaminant codes selectable for now
++ Need better error handling for null queries
++ Slider for year range for line graph might be nice
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Line graph
+
+```{r ggline}
+
+renderPlot({
+  
+  plotdata <- violations %>% filter(CONTAMINANT_CODE == input$code, 
+                           IS_HEALTH_BASED_IND == input$type) %>% 
+  group_by(PRIMACY_AGENCY_CODE, YEAR) %>% 
+  tally()
+  
+  
+  ggplot(plotdata, aes(x = YEAR, y = n, 
+                       color = PRIMACY_AGENCY_CODE)) +
+  geom_line(size = 1.5) +
+  theme(legend.position = "top",
+        panel.grid.minor.x = element_blank()) +
+    guides(color = guide_legend(nrow = 1)) + 
+    scale_x_continuous(breaks = seq(min(plotdata$YEAR), 
+                                    max(plotdata$YEAR), by = 1))
+  
+ 
+})
+
+```
+
+### Violations Table
+
+```{r}
+
+renderDataTable({
+  
+  tabledata <- violations %>% 
+    filter(CONTAMINANT_CODE == input$code, 
+           IS_HEALTH_BASED_IND == input$type, 
+           YEAR == input$year) %>% 
+    arrange(PRIMACY_AGENCY_CODE, PWSID)
+  
+  datatable(tabledata, options = list(
+    pageLength = 5, 
+    scrollX = TRUE,
+    scrollY = "200px",
+    initComplete = JS("function(settings, json) {$(this.api().table().header()).css({'font-size' : '12px'});}")
+  )) %>% 
+    formatStyle(colnames(tabledata), fontSize = '12px')
+})
+
+```
+
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Map
+
+
+```{r map}
+
+renderPlot({
+  
+  mapdata <- violations %>% 
+    filter(CONTAMINANT_CODE == input$code, 
+           IS_HEALTH_BASED_IND == input$type,
+           YEAR == input$year) %>% 
+    select(PWSID) %>% 
+    mutate(IND = 1) %>% 
+    distinct() %>% 
+    inner_join(locations, ., by = "PWSID")
+  
+  mapdata <- cbind(st_drop_geometry(mapdata), 
+                   st_coordinates(mapdata))
+  
+  ggplot(states, aes(x = long, y = lat, group = group)) + 
+  geom_polygon(fill = NA, color = "black") + 
+  geom_jitter(data = mapdata, 
+             aes(x = X, y = Y), 
+             alpha = 0.7, color = "red", inherit.aes = FALSE) + 
+  coord_fixed(1.2) +
+    theme(panel.border = element_rect(fill = NA, color = "black"),
+        panel.background = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+  
+})
+
+
+```
+

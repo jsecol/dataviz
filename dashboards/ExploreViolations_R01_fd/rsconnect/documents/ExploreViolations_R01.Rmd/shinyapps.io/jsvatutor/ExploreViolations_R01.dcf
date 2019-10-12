@@ -1,0 +1,12 @@
+name: ExploreViolations_R01
+title: ExploreViolations_R01
+username:
+account: jsvatutor
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1321384
+bundleId: 2494551
+url: https://jsvatutor.shinyapps.io/ExploreViolations_R01/
+when: 1570899172.88739
+asMultiple: FALSE
+asStatic: FALSE
