@@ -129,7 +129,7 @@ ContGroup_list <- list(`IOC` = IOCcodes_list,
 # way to name these items
 # c(`this` = ContGroup_list[["WQ"]][[10]])
 
-
+YEAR_range <- seq(min(violations$YEAR), max(violations$YEAR), by = 1)
 
 
 ```
@@ -147,7 +147,7 @@ inputPanel(
   selectInput("type", label = "Health-based:",
               choices = c("Y", "N"), selected = "Y"),
   selectInput("year", label = "Map and table year:",
-              choices = c(2002:2019), selected = 2010)
+              choices = c(YEAR_range), selected = 2010)
   
 )
 ```
