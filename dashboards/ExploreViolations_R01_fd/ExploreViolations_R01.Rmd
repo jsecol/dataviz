@@ -22,6 +22,14 @@ library(maps)
 ```
 
 
+```{r notes, include=FALSE}
+
+# see: https://towardsdatascience.com/in-r-shiny-when-is-an-error-really-an-error-702205ebb5d5
+# https://www.davidsolito.com/post/conditional-drop-down-in-shiny/
+
+```
+
+
 
 ```{r global, include=FALSE}
 
@@ -41,6 +49,89 @@ states <- map_data("state") %>%
   filter(region %in% c("connecticut", "maine", "massachusetts", 
                        "new hampshire", "rhode island", "vermont"))
 
+contaminant_codes <- read_csv("contaminant_codes_types.csv")
+
+# some NA CONTAMINANT_CODE, this excludes them
+lookup_codes <- violations %>% 
+  group_by(CONTAMINANT_CODE) %>% 
+  tally(name = "CODE_N") %>% 
+  inner_join(contaminant_codes, ., 
+             by = c("CODE" = "CONTAMINANT_CODE")) %>% 
+  arrange(TYPE_CODE, CODE) %>% 
+  mutate(NAME2 = paste0(CODE, ": ", NAME, " (n = ", CODE_N, ")"))
+
+
+# lookup_codes %>% select(TYPE_CODE) %>% 
+#   distinct()
+
+IOCcodes <- lookup_codes %>% filter(TYPE_CODE == "IOC") %>% .$CODE
+IOCcode_names <- lookup_codes %>% filter(TYPE_CODE == "IOC") %>% .$NAME2
+# names(IOCcodes) <- IOCcode_names
+IOCcodes_list <- list()
+for(i in 1:length(IOCcodes)) {
+  IOCcodes_list[[i]] <- IOCcodes[i]
+}
+names(IOCcodes_list) <- IOCcode_names
+
+MORcodes <- lookup_codes %>% filter(TYPE_CODE == "MOR") %>% .$CODE
+MORcode_names <- lookup_codes %>% filter(TYPE_CODE == "MOR") %>% .$NAME2
+# names(MORcodes) <- MORcode_names
+MORcodes_list <- list()
+for(i in 1:length(MORcodes)) {
+  MORcodes_list[[i]] <- MORcodes[i]
+}
+names(MORcodes_list) <- MORcode_names
+
+OCcodes <- lookup_codes %>% filter(TYPE_CODE == "OC") %>% .$CODE
+OCcode_names <- lookup_codes %>% filter(TYPE_CODE == "OC") %>% .$NAME2
+# names(OCcodes) <- OCcode_names
+OCcodes_list <- list()
+for(i in 1:length(OCcodes)) {
+  OCcodes_list[[i]] <- OCcodes[i]
+}
+names(OCcodes_list) <- OCcode_names
+
+RAcodes <- lookup_codes %>% filter(TYPE_CODE == "RA") %>% .$CODE
+RAcode_names <- lookup_codes %>% filter(TYPE_CODE == "RA") %>% .$NAME2
+# names(RAcodes) <- RAcode_names
+RAcodes_list <- list()
+for(i in 1:length(RAcodes)) {
+  RAcodes_list[[i]] <- RAcodes[i]
+}
+names(RAcodes_list) <- RAcode_names
+
+RLcodes <- lookup_codes %>% filter(TYPE_CODE == "RL") %>% .$CODE
+RLcode_names <- lookup_codes %>% filter(TYPE_CODE == "RL") %>% .$NAME2
+# names(RLcodes) <- RLcode_names
+RLcodes_list <- list()
+for(i in 1:length(RLcodes)) {
+  RLcodes_list[[i]] <- RLcodes[i]
+}
+names(RLcodes_list) <- RLcode_names
+
+WQcodes <- lookup_codes %>% filter(TYPE_CODE == "WQ") %>% .$CODE
+WQcode_names <- lookup_codes %>% filter(TYPE_CODE == "WQ") %>% .$NAME2
+# names(WQcodes) <- WQcode_names
+WQcodes_list <- list()
+for(i in 1:length(WQcodes)) {
+  WQcodes_list[[i]] <- WQcodes[i]
+}
+names(WQcodes_list) <- WQcode_names
+
+
+ContGroup_list <- list(`IOC` = IOCcodes_list, 
+                       `MOR` = MORcodes_list,
+                       `OC` = OCcodes_list,
+                       `RA` = RAcodes_list,
+                       `RL` = RLcodes_list,
+                       `WQ` = WQcodes_list)
+
+# way to name these items
+# c(`this` = ContGroup_list[["WQ"]][[10]])
+
+
+
+
 ```
 
 
@@ -52,7 +143,7 @@ Column {.sidebar}
 ```{r violations, echo=FALSE}
 inputPanel(
   selectInput("code", label = "Contaminant code:",
-              choices = c("1005", "3100", "3013", "3014", "5000"), selected = "1005"),
+              choices = ContGroup_list, selected = "1005", selectize = FALSE),
   selectInput("type", label = "Health-based:",
               choices = c("Y", "N"), selected = "Y"),
   selectInput("year", label = "Map and table year:",
@@ -64,7 +155,8 @@ inputPanel(
 </br>
 
 + Data from SDWIS Violation table download 2019-10-06
-+ Just a few contaminant codes selectable for now
++ Contaminant codes are grouped by type and show name
++ Might be best to start with health-based, then update contaminant dropdown to only show available
 + Need better error handling for null queries
 + Slider for year range for line graph might be nice
 
