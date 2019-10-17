@@ -10,6 +10,9 @@ runtime: shiny
 
 ```{r setup, include=FALSE}
 
+# devtools::install_github("ropensci/plotly")
+
+
 library(flexdashboard)
 library(readr)
 library(dplyr)
@@ -18,7 +21,8 @@ library(ggplot2)
 library(sf)
 # library(DT)
 library(maps)
-library(gganimate)
+# library(gganimate)
+library(plotly)
 
 ```
 
@@ -197,7 +201,7 @@ Column {data-width=650}
 
 ```{r map}
 
-renderPlot({
+renderPlotly({
   
   mapdata <- violations %>% 
     filter(CONTAMINANT_CODE == input$code, 
@@ -210,23 +214,50 @@ renderPlot({
   mapdata <- cbind(st_drop_geometry(mapdata), 
                    st_coordinates(mapdata))
   
-  ggplot(states, aes(x = long, y = lat, group = group)) + 
-  geom_polygon(fill = NA, color = "black") + 
-  geom_jitter(data = mapdata, 
-             aes(x = X, y = Y),
-             width = 0.001, height = 0.001,
-             alpha = 0.7, color = "red", inherit.aes = FALSE) + 
-  coord_fixed(1.2) +
-  theme(panel.border = element_rect(fill = NA, color = "black"),
-        panel.background = element_blank(), 
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank()) +
-  labs(title = 'Year: {closest_state}', x = 'LON', y = 'LAT') +
-  transition_states(YEAR) +
-  ease_aes('linear')
-  
+  p1 <- 
+    ggplot(states, aes(x = long, y = lat, group = group)) + 
+    geom_polygon(fill = NA, color = "black") + 
+    geom_jitter(data = mapdata, 
+                aes(x = X, y = Y, frame = YEAR),
+                width = 0.001, height = 0.001,
+                alpha = 0.7, color = "red", inherit.aes = FALSE) + 
+    coord_fixed(1.2) +
+    theme(panel.border = element_rect(fill = NA, color = "black"),
+          panel.background = element_blank(), 
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank())
+    
+
+  ggplotly(p1, height = 500, width = 500) %>% 
+    animation_opts(2000, transition = 250)
+    
+      
 })
 
 
 ```
+
+
+```{r include=FALSE}
+
+# # maybe for a button to save GIF
+
+# 
+#   ggplot(states, aes(x = long, y = lat, group = group)) + 
+#   geom_polygon(fill = NA, color = "black") + 
+#   geom_jitter(data = mapdata, 
+#              aes(x = X, y = Y),
+#              width = 0.001, height = 0.001,
+#              alpha = 0.7, color = "red", inherit.aes = FALSE) + 
+#   coord_fixed(1.2) +
+#   theme(panel.border = element_rect(fill = NA, color = "black"),
+#         panel.background = element_blank(), 
+#         panel.grid.major = element_blank(), 
+#         panel.grid.minor = element_blank()) +
+#   labs(title = 'Year: {closest_state}', x = 'LON', y = 'LAT') +
+#   transition_states(YEAR) +
+#   ease_aes('linear')
+
+```
+
 
