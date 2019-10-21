@@ -32,8 +32,9 @@ library(plotly)
 # see: https://stackoverflow.com/questions/35399182/using-gg-animate-to-create-a-gif
 # https://github.com/ropensci/nlrx/issues/16
 # see for ideas, other outputs: https://github.com/thomasp85/gganimate
+# THE WAY for plotly to work correctly: https://stackoverflow.com/questions/53318993/rendering-an-animated-plot-in-r-shiny-with-ggplot-and-plotly
 
-
+# for gganimate may need all:
 # devtools::install_github('thomasp85/gganimate')
 # install.packages("gifski")
 # devtools::install_github("ropensci/nlrx")
