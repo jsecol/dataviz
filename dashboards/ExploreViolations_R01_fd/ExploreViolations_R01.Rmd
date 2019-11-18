@@ -203,7 +203,7 @@ renderDataTable({
     arrange(PRIMACY_AGENCY_CODE, PWSID)
   
   datatable(tabledata, options = list(
-    pageLength = 5, 
+    pageLength = 25, 
     scrollX = TRUE,
     scrollY = "200px",
     initComplete = JS("function(settings, json) {$(this.api().table().header()).css({'font-size' : '12px'});}")
